@@ -6,6 +6,9 @@ pulls hyperlocal FortyGuard temperature data per segment, checks it against
 cargo-specific thresholds, and returns a cost-quantified mitigation
 recommendation. Built for the FortyGuard Global AI Hackathon 2026.
 
+![Uploading ChatGPT Image Aug 22, 2026, 04_29_53 PM.png…]()
+
+
 ## Setup
 
 1. Install dependencies:
