@@ -1,7 +1,7 @@
 # MediGuard AI
 
 <p align="center">
-  <img src="assets/mediguard-logo.svg" alt="MediGuard AI" width="650">
+  <img src="assets/mediguard-logo.webp" alt="MediGuard AI" width="650">
 </p>
 
 <p align="center">
