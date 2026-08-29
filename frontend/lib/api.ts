@@ -40,9 +40,9 @@ export async function apiCall<T>(
 /**
  * Check backend health status
  */
-export async function checkHealth() {
+export async function checkHealth(): Promise<{ status: string; error?: string }> {
   try {
-    return await apiCall("/health");
+    return await apiCall<{ status: string }>("/health");
   } catch (error) {
     return { status: "unhealthy", error: String(error) };
   }
