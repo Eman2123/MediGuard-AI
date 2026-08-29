@@ -247,16 +247,22 @@ def assess_shipment(req: ShipmentRequest):
 
 def _build_candidate_datetimes(requested_iso: str):
     """
-    Build 3 candidate departure datetimes guaranteed to fall inside
-    FortyGuard's forecast window (now .. now+12h).
+    Build 3 candidate departure datetimes to compare.
 
-    If the user's requested date/time already falls inside that window,
-    candidates are anchored around it. If it doesn't (e.g. "tomorrow",
-    "next week"), fixed clock-hour candidates on that date would ALL fall
-    outside the window and every comparison would fail - so instead we
-    fall back to the nearest times actually available right now, and flag
-    that we had to adjust (adjusted=True) so the response stays honest
-    about what was actually compared.
+    Always includes at least one candidate ~24h in the past, which is
+    virtually guaranteed to have real FortyGuard data (near-real-time
+    processing lag means anything within ~3h of "now", or any forecast
+    time, frequently comes back with n_cells=0 even on a successful
+    request - confirmed empirically). Without this, a request whose
+    departure_time fell outside FortyGuard's window used to generate
+    THREE forecast/near-now candidates and the whole comparison would
+    come back 0/3 verified no matter what.
+
+    If the user's requested date/time falls inside FortyGuard's window
+    (now .. now+12h), candidates are anchored around it. If it doesn't
+    (e.g. "tomorrow", "next week"), we fall back to safe recent-past
+    times instead, and flag that we had to adjust (adjusted=True) so
+    the response stays honest about what was actually compared.
     """
     now = datetime.utcnow()
     max_allowed = now + timedelta(hours=12)
@@ -267,19 +273,29 @@ def _build_candidate_datetimes(requested_iso: str):
     except Exception:
         requested_dt = now
 
+    # FortyGuard's near-real-time processing has a lag: times within ~3
+    # hours of "now" (or any forecast time) reliably return n_cells=0 even
+    # though the request itself succeeds (confirmed empirically - see
+    # shipment.py history). A candidate 24h in the past is virtually
+    # guaranteed to have been fully processed, so we always include one -
+    # otherwise, whenever the user's request falls outside the window, ALL
+    # THREE candidates used to be forecast/near-now and the whole comparison
+    # would come back 0/3 verified no matter what.
+    safe_recent_past = now - timedelta(hours=24)
+
     if min_allowed <= requested_dt <= max_allowed:
         candidates = sorted({
             requested_dt,
-            now + timedelta(minutes=30),
+            safe_recent_past,
             min(now + timedelta(hours=8), max_allowed - timedelta(minutes=5)),
         })
         adjusted = False
     else:
-        candidates = [
-            now + timedelta(minutes=30),
-            now + timedelta(hours=6),
-            max_allowed - timedelta(minutes=5),
-        ]
+        candidates = sorted({
+            safe_recent_past,
+            now - timedelta(hours=48),
+            min(now + timedelta(hours=6), max_allowed - timedelta(minutes=5)),
+        })
         adjusted = True
 
     return candidates, adjusted
