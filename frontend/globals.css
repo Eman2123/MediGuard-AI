@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hardcoded body colors removed so Tailwind classes (bg-deep, text-fg) can work */
+
+::selection {
+  background-color: #0D9488; /* Medical Teal */
+  color: #FFFFFF;
+}
+
+/* Visible keyboard focus, everywhere */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #0D9488;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pulse-dot {
+  animation: pulseDot 2.4s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 91, 91, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(251, 91, 91, 0);
+  }
+}
+
+/* Subtle card hover lift */
+.card-lift {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  border-color: rgba(13, 148, 136, 0.35); /* Teal border on hover */
+  box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.2);
+}

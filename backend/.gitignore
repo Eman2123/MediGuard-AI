@@ -1,0 +1,15 @@
+# Environment / secrets — NEVER commit your FortyGuard or OpenAI/AIML API key
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Local heatmap cache (per-machine, not for version control)
+app/services/.heatmap_cache.json
+
+# IDE
+.vscode/
+.idea/
