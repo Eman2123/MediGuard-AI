@@ -177,13 +177,6 @@ def _assess_shipment_core(req: ShipmentRequest) -> ShipmentResponse:
     full_route_cost = estimate_full_route_cost(req.cargo_type, total_distance)
     savings = full_route_cost - total_cooling_cost
 
-    # A common cause of "everything unknown": FortyGuard's near-real-time
-    # processing has a lag, so times close to right now (or forecast times)
-    # often aren't populated yet - even earlier THIS SAME DAY can work fine
-    # if it's a few hours in the past (confirmed: today 06:00 UTC returned
-    # real data while today ~07:20 and a same-day forecast both came back
-    # empty). So the real trigger is "how recent relative to now", not
-    # simply "is it today's calendar date".
     hours_ago = (datetime.utcnow() - dt).total_seconds() / 3600
     recency_hint = (
         " (Tip: very recent or forecasted times often aren't processed yet by "
@@ -273,14 +266,6 @@ def _build_candidate_datetimes(requested_iso: str):
     except Exception:
         requested_dt = now
 
-    # FortyGuard's near-real-time processing has a lag: times within ~3
-    # hours of "now" (or any forecast time) reliably return n_cells=0 even
-    # though the request itself succeeds (confirmed empirically - see
-    # shipment.py history). A candidate 24h in the past is virtually
-    # guaranteed to have been fully processed, so we always include one -
-    # otherwise, whenever the user's request falls outside the window, ALL
-    # THREE candidates used to be forecast/near-now and the whole comparison
-    # would come back 0/3 verified no matter what.
     safe_recent_past = now - timedelta(hours=24)
 
     if min_allowed <= requested_dt <= max_allowed:
@@ -331,10 +316,6 @@ def _rank_candidates(candidate_datetimes, build_request_fn):
                 sum(s.max_temp_c for s in assessment.segments if s.risk_level != "unknown")
                 / max(1, len(assessment.segments) - assessment.total_unknown_segments), 1
             ) if assessment.total_unknown_segments < len(assessment.segments) else None,
-            # Kept for map rendering on the frontend (lat/lon + risk per segment).
-            # Not shown in the comparison table — only the winning candidate's
-            # segments actually get used, but we compute it for every candidate
-            # anyway since _assess_shipment_core already produced it for free.
             "segments": [
                 {
                     "segment_id": s.segment_id,
@@ -359,12 +340,6 @@ def _rank_candidates(candidate_datetimes, build_request_fn):
         trustworthy_pool = fully_verified
         data_incomplete = False
     else:
-        # Nobody is fully verified. Do NOT let cost alone decide the winner
-        # here — a candidate with MORE unknown segments will look "cheaper"
-        # simply because unknown segments never get flagged/costed, which
-        # would let the least-verified option win. Instead: restrict to
-        # whichever candidate(s) have the FEWEST unknown segments (i.e. the
-        # most real data), and only break ties on cost within that group.
         data_incomplete = True
         min_unknown = min(r["total_unknown_segments"] for r in results)
         trustworthy_pool = [r for r in results if r["total_unknown_segments"] == min_unknown]
@@ -466,7 +441,7 @@ def smart_assess(request: ParseRequest):
             requested_dt = datetime.fromisoformat(shipment_req.departure_time)
             requested_hours_ago = (datetime.utcnow() - requested_dt).total_seconds() / 3600
         except Exception:
-            requested_hours_ago = 999  # unknown format - don't show the recency tip
+            requested_hours_ago = 999
 
         confidence_note = (
             " NOTE: this is based on incomplete temperature data (some segments could not be "
@@ -506,9 +481,6 @@ def smart_assess(request: ParseRequest):
             f"This saves ${savings} compared to the worst option.{confidence_note}{window_note}"
         )
 
-        # Keep the comparison table lean (frontend renders these as rows) —
-        # strip the per-segment geo data out of each candidate and surface
-        # it separately, just for the winning candidate, for the map view.
         route_segments = best.get("segments", [])
         comparisons_view = [{k: v for k, v in r.items() if k != "segments"} for r in results]
 
