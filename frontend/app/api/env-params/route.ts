@@ -6,7 +6,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward to FastAPI backend
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+    const backendUrl = process.env.BACKEND_URL;
+    if (!backendUrl && process.env.NODE_ENV === 'production') {
+      throw new Error('BACKEND_URL environment variable not set in production');
+    }
 
     const response = await fetch(`${backendUrl}/api/env-params`, {
       method: "POST",
