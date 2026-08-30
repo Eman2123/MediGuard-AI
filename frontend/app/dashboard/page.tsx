@@ -46,7 +46,7 @@ type SmartAssessResult = {
 
 export default function DashboardPage() {
   const [userInput, setUserInput] = useState(
-    "Ship insulin from Phoenix to Denver tomorrow at 6am"
+    "Ship insulin from Denver to Colorado Springs"
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
