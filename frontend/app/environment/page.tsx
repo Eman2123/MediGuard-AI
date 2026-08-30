@@ -12,6 +12,7 @@ const CITIES = [
   "chicago",
   "miami",
   "denver",
+  "colorado_springs", 
   "seattle",
   "new_york",
   "san_francisco",
