@@ -3,18 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
-
-type HistoryEntry = {
-  shipment_id: string;
-  cargo_type: string;
-  origin_city: string;
-  destination_city: string;
-  departure_time: string;
-  total_flagged_segments: number;
-  total_unknown_segments: number;
-  total_cooling_cost: number;
-  savings: number;
-};
+import { getHistoryEntries, type HistoryEntry } from "@/lib/history";
 
 export default function HistoryPage() {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -22,11 +11,13 @@ export default function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/history")
-      .then((res) => res.json())
-      .then((data) => setEntries(data.history || []))
-      .catch(() => setError("Couldn't load history."))
-      .finally(() => setLoading(false));
+    try {
+      setEntries(getHistoryEntries());
+    } catch {
+      setError("Couldn't load history.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   return (
