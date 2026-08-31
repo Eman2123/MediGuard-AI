@@ -1,7 +1,14 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 /**
- * Generic API call handler with error handling
+ * Generic API call handler with error handling.
+ *
+ * IMPORTANT: this calls our OWN Next.js app (relative "/api/..."),
+ * which is proxied server-side to the FastAPI backend via the
+ * route handlers in app/api/*\/route.ts (using BACKEND_URL).
+ *
+ * We do NOT call the FastAPI backend directly from the browser —
+ * that was the cause of the CORS errors, since the browser origin
+ * and the FastAPI origin are different domains on Vercel.
+ *
  * @param endpoint - The API endpoint (e.g., "/smart-assess")
  * @param options - Fetch options
  * @returns Promise with the response data
@@ -10,7 +17,7 @@ export async function apiCall<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = `${API_BASE}/api${endpoint}`;
+  const url = `/api${endpoint}`;
 
   try {
     const response = await fetch(url, {
@@ -84,10 +91,10 @@ export async function assessShipment(
 export async function getEnvironmentData(filters?: Record<string, string>) {
   const searchParams = new URLSearchParams(filters || {});
   const queryString = searchParams.toString();
-  const endpoint = queryString 
+  const endpoint = queryString
     ? `/environment?${queryString}`
     : "/environment";
-  
+
   return apiCall(endpoint);
 }
 
