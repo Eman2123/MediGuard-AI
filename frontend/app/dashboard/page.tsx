@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import Logo from "@/components/Logo";
 import { smartAssessShipment, getErrorMessage } from "@/lib/api";
+import { saveHistoryEntry } from "@/lib/history";
 import type { RouteSegment } from "@/components/RouteMap";
 
 // Leaflet touches `window`/`document` at import time, so it can only render
@@ -59,8 +60,23 @@ export default function DashboardPage() {
     setResult(null);
     
     try {
-      const data = await smartAssessShipment(userInput);
-      setResult(data as SmartAssessResult);
+      const data = (await smartAssessShipment(userInput)) as SmartAssessResult;
+      setResult(data);
+
+      const best = data.comparisons.find(
+        (c) => c.departure_time === data.recommended_departure_time
+      );
+      saveHistoryEntry({
+        shipment_id: `mg-${Date.now().toString(36)}`,
+        cargo_type: data.parsed_request.cargo_type,
+        origin_city: data.parsed_request.origin_city,
+        destination_city: data.parsed_request.destination_city,
+        departure_time: data.recommended_departure_time,
+        total_flagged_segments: best?.total_flagged_segments ?? 0,
+        total_unknown_segments: best?.total_unknown_segments ?? 0,
+        total_cooling_cost: best?.total_cooling_cost ?? 0,
+        savings: data.estimated_savings_vs_worst,
+      });
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
